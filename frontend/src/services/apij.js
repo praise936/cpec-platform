@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apij = axios.create({
-    baseURL: "http://localhost:8000/api/",
+    baseURL: import.meta.env.VITE_API_URL,
 });
 
 apij.interceptors.request.use((config) => {
