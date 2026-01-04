@@ -1,30 +1,54 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import "./certificates.css";
 
-export default function Certificates() {
+export default function Certificates({ user }) {
     const [certificates, setCertificates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        api.get("certificates/")
-            .then(res => setCertificates(res.data))
-            .catch(err => console.error(err));
+        api
+            .get("/certificates/mine/")
+            .then((res) => setCertificates(res.data))
+            .catch(() => setError("Failed to load certificates"))
+            .finally(() => setLoading(false));
     }, []);
+
+    const downloadCertificate = async (id) => {
+        const response = await api.get(`/certificates/mine/${id}/`, {
+            responseType: "blob",
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `certificate_${id}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+    };
+
+    if (loading) return <p className="spinner">Loading certificates...</p>;
 
     return (
         <div className="certificates-page">
-            <h1 className="certificates-title">My Certificates</h1>
+            {error && <p className="error-message">{error}</p>}
 
-            <div className="certificates-list">
-                {certificates.map(cert => (
-                    <div key={cert.id} className="certificate-card">
-                        <h3>{cert.title}</h3>
-                        <a href={cert.pdf} target="_blank" rel="noreferrer">
-                            Download PDF
-                        </a>
-                    </div>
-                ))}
-            </div>
+            {certificates.length === 0 ? (
+                <p className="empty-message">You have no certificates yet.</p>
+            ) : (
+                <div className="certificates-container">
+                    {certificates.map((c) => (
+                        <div key={c.id} className="certificate-card">
+                            <h3>{c.title}</h3>
+                            <button
+                                className="btn-download-certificate"
+                                onClick={() => downloadCertificate(c.id)}
+                            >
+                                Download PDF
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
